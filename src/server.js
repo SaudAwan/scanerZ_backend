@@ -13,6 +13,10 @@ app.use(cookieParser())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
+app.get('/', (req, res) => {
+	res.send('Welcome to the API')
+})
+
 app.use('/api/v1', routes)
 
 const startServer = async () => {
