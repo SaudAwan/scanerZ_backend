@@ -1,7 +1,5 @@
 const User = require('../models/user.model')
 const createError = require('../utils/createError.utils')
-const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
 const STATUS = require('../constant/status.constant')
 const verifyToken = require('../utils/verifyToken.utils')
 
@@ -23,14 +21,14 @@ controller.register = async (req, res, next) => {
 controller.login = async (req, res, next) => {
 	try {
 		const user = await User.findOne({ email: req.body.email })
-		if (!user) return next(createError(404, 'User not existed'))
+		if (!user) return next(createError(STATUS.NOT_FOUND, 'User not existed'))
 
 		const isMatch = await user.comparePassword(req.body.password)
-		if (!isMatch) return next(createError(404, 'Wrong credentials'))
+		if (!isMatch) return next(createError(STATUS.NOT_FOUND, 'Wrong credentials'))
 
 		const token = user.generateAuthToken()
 		return res
-			.status(200)
+			.status(STATUS.SUCCESS)
 			.cookie('access_token', token, {
 				httpOnly: true,
 			})
@@ -44,12 +42,11 @@ controller.login = async (req, res, next) => {
 
 controller.logedIn = async (req, res, next) => {
 	try {
-		const token = req.headers.authorization.split(' ')[1]
-		const userId = verifyToken(token)
+		const userId = verifyToken(req.headers.authorization)
 		const user = await User.findById(userId)
 		if (!user) return next(createError(STATUS.NOT_FOUND, 'User not found'))
 		const { password, ...otherDetails } = user._doc
-		return res.status(200).json({ user: otherDetails })
+		return res.status(STATUS.SUCCESS).json({ user: otherDetails })
 	} catch (error) {
 		res.status(STATUS.INTERNAL_SERVER_ERROR).json({
 			message: error.message,
