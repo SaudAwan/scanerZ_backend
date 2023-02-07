@@ -23,5 +23,18 @@
 	},
 	"devDependencies": {
 		"nodemon": "^2.0.20"
+	},
+	"engines": {
+		"node": "16.x",
+		"yarn": "1.x"
+	},
+	"prettier": {
+		"printWidth": 110,
+		"semi": false,
+		"singleQuote": true,
+		"trailingComma": "es5",
+		"tabWidth": 3,
+		"endOfLine": "auto",
+		"bracketSameLine": true
 	}
 }
