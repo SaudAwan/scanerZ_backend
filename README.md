@@ -6,8 +6,9 @@
 
 # Project Scripts
 
-`yarn start`: starts the main server.
-`yarn dev`: starts the project in development mode with hot reloading.
+`yarn start` : starts the main server.
+
+`yarn dev` : starts the project in development mode with hot reloading.
 
 # Project Engines
 
