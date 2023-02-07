@@ -10,6 +10,10 @@ const fileSchema = new Schema({
 		type: String,
 		required: true,
 	},
+	formate: {
+		type: String,
+		require: true,
+	},
 	user: {
 		type: Schema.Types.ObjectId,
 		ref: 'User',

@@ -19,6 +19,7 @@ controller.uploadFile = async (req, res) => {
 			title: req.body.title,
 			file: result.url,
 			user: req.user._id,
+			formate: file.mimetype,
 		})
 		fs.unlinkSync(req.files.file.tempFilePath)
 		await newFile.save()
