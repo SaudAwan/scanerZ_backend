@@ -2,6 +2,9 @@ const STATUS = require('../constant/status.constant')
 const File = require('../models/file.model')
 const cloudinary = require('cloudinary').v2
 const fs = require('fs')
+const qrcode = require('qrcode')
+const isValidURL = require('../utils/isValidURL.utils')
+const createError = require('../utils/createError.utils')
 
 controller = {}
 
@@ -64,6 +67,18 @@ controller.getUserFiles = async (req, res) => {
    }
 }
 
+controller.getFileWithFormate = async (req, res) => {
+   try {
+      const formate = req.query.formate
+      const files = await File.find({
+         formate: { $in: formate },
+      })
+      return res.status(STATUS.SUCCESS).json(files)
+   } catch (error) {
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+   }
+}
+
 controller.updateFile = async (req, res) => {
    try {
       const updatedFile = await File.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true })
@@ -83,6 +98,19 @@ controller.deleteFile = async (req, res, next) => {
       return res.status(STATUS.SUCCESS).json({ message: 'File deleted successfully' })
    } catch (error) {
       console.error(error)
+   }
+}
+
+controller.generateQRcode = async (req, res, next) => {
+   try {
+      const link = req.query.link
+      let mask = link
+      if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
+      const qrCode = await qrcode.toBuffer(mask)
+      await res.contentType('image/png')
+      await res.send(qrCode)
+   } catch (error) {
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
    }
 }
 
