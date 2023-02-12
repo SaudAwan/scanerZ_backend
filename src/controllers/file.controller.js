@@ -17,8 +17,10 @@ cloudinary.config({
 controller.uploadFile = async (req, res) => {
    try {
       const file = req.files.file
+      if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
       const result = await cloudinary.uploader.upload(file.tempFilePath)
-      const newFile = new File({
+      console.log(result.url, 'result.url')
+      const newFile = await new File({
          title: req.body.title,
          file: result.url,
          user: req.user._id,
@@ -28,10 +30,7 @@ controller.uploadFile = async (req, res) => {
       await newFile.save()
       res.status(STATUS.SUCCESS).json(newFile)
    } catch (error) {
-      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({
-         status: STATUS.INTERNAL_SERVER_ERROR,
-         message: error.message,
-      })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
    }
 }
 
@@ -41,7 +40,7 @@ controller.getAllFiles = async (req, res) => {
       const files = await File.find({}).limit(+limit).skip(+skip)
       return res.status(STATUS.SUCCESS).json(files)
    } catch (error) {
-      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 
@@ -52,7 +51,7 @@ controller.getFile = async (req, res) => {
       if (!file) return res.status(STATUS.NOT_FOUND).json({ message: 'File not found' })
       return res.status(STATUS.SUCCESS).json(file)
    } catch (error) {
-      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 
@@ -63,7 +62,7 @@ controller.getUserFiles = async (req, res) => {
       if (!files) return res.status(STATUS.NOT_FOUND).send({ error: 'Files not found' })
       return res.status(STATUS.SUCCESS).json(files)
    } catch (error) {
-      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 
@@ -75,7 +74,7 @@ controller.getFileWithFormate = async (req, res) => {
       })
       return res.status(STATUS.SUCCESS).json(files)
    } catch (error) {
-      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
    }
 }
 
@@ -84,7 +83,7 @@ controller.updateFile = async (req, res) => {
       const updatedFile = await File.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true })
       res.status(STATUS.SUCCESS).json(updatedFile)
    } catch (error) {
-      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 
@@ -97,7 +96,7 @@ controller.deleteFile = async (req, res, next) => {
       await file.remove()
       return res.status(STATUS.SUCCESS).json({ message: 'File deleted successfully' })
    } catch (error) {
-      console.error(error)
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 
@@ -110,7 +109,7 @@ controller.generateQRcode = async (req, res, next) => {
       await res.contentType('image/png')
       await res.send(qrCode)
    } catch (error) {
-      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 

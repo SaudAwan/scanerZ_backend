@@ -9,22 +9,20 @@ controller.register = async (req, res, next) => {
    try {
       const { email } = req.body
       const isUserExisted = await User.findOne({ email })
-      if (isUserExisted) return next(createError(STATUS.CONFLICT, 'User Already existed'))
+      if (isUserExisted) return res.status(STATUS.CONFLICT).json({ message: 'User already existed' })
       await User.create(req.body)
-      return res.status(STATUS.CREATED).json({ msg: 'User successfully register' })
+      return res.status(STATUS.CREATED).json({ message: 'User successfully register' })
    } catch (err) {
-      res.status(STATUS.INTERNAL_SERVER_ERROR).json({
-         message: err.message,
-      })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 controller.login = async (req, res, next) => {
    try {
       const user = await User.findOne({ email: req.body.email })
-      if (!user) return next(createError(STATUS.NOT_FOUND, 'User not existed'))
+      if (!user) return res.status(STATUS.NOT_FOUND).json({ message: 'User not existed' })
 
       const isMatch = await user.comparePassword(req.body.password)
-      if (!isMatch) return next(createError(STATUS.NOT_FOUND, 'Wrong credentials'))
+      if (!isMatch) return res.status(STATUS.NOT_FOUND).json({ message: 'Wrong credentials' })
 
       const token = user.generateAuthToken()
       return res
@@ -34,9 +32,7 @@ controller.login = async (req, res, next) => {
          })
          .json({})
    } catch (error) {
-      res.status(STATUS.INTERNAL_SERVER_ERROR).json({
-         message: error.message,
-      })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 
@@ -48,9 +44,7 @@ controller.logedIn = async (req, res, next) => {
       const { password, ...otherDetails } = user._doc
       return res.status(STATUS.SUCCESS).json({ user: otherDetails })
    } catch (error) {
-      res.status(STATUS.INTERNAL_SERVER_ERROR).json({
-         message: error.message,
-      })
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
 
