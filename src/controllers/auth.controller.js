@@ -30,7 +30,7 @@ controller.login = async (req, res, next) => {
          .cookie('access_token', token, {
             httpOnly: true,
          })
-         .json({})
+         .json({ message: 'login success' })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }

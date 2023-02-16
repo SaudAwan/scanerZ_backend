@@ -38,7 +38,7 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
    try {
-      const isMatch = await comparePassword(candidatePassword, this.password)
+      isMatch = await comparePassword(candidatePassword, this.password)
       return isMatch
    } catch (err) {
       throw new Error(err)
