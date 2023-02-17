@@ -25,12 +25,8 @@ controller.login = async (req, res, next) => {
       if (!isMatch) return res.status(STATUS.NOT_FOUND).json({ message: 'Wrong credentials' })
 
       const token = user.generateAuthToken()
-      return res
-         .status(STATUS.SUCCESS)
-         .cookie('ACCESS_TOKEN', token, {
-            httpOnly: true,
-         })
-         .json({ message: 'login success' })
+
+      return res.status(STATUS.SUCCESS).json({ message: 'login success', token })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
