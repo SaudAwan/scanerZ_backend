@@ -4,7 +4,6 @@ const bodyParser = require('body-parser')
 const connectToMongoDB = require('./config/connectDB.config')
 const routes = require('./routes')
 const cors = require('cors')
-const cookieParser = require('cookie-parser')
 const fileUpload = require('express-fileupload')
 const qrcode = require('qrcode')
 
@@ -16,7 +15,6 @@ app.use(
    })
 )
 app.use(cors())
-app.use(cookieParser())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
