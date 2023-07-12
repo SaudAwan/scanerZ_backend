@@ -4,6 +4,7 @@ const fileController = require('../controllers/file.controller')
 const authMiddleware = require('../middlewares/auth.middleware')
 
 router.post('/upload', authMiddleware, fileController.uploadFile)
+router.post('/uploadUrl', authMiddleware, fileController.saveUrl)
 router.get('/qrcode', fileController.generateQRcode)
 router.get('/get-files', fileController.getAllFiles)
 router.get('/get-file-with-formate', fileController.getFileWithFormate)

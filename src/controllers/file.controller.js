@@ -34,10 +34,30 @@ controller.uploadFile = async (req, res) => {
    }
 }
 
+controller.saveUrl = async (req, res) => {
+   try {
+      // const file = req.files.file
+      // if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
+      // const result = await cloudinary.uploader.upload(file.tempFilePath)
+      // console.log(result.url, 'result.url')
+      const newFile = await new File({
+         title: req.body.title,
+         file: req.body.url,
+         user: req.user._id,
+         formate: "urls",
+      })
+      // fs.unlinkSync(req.files.file.tempFilePath)
+      await newFile.save()
+      res.status(STATUS.SUCCESS).json(newFile)
+   } catch (error) {
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
+   }
+}
+
 controller.getAllFiles = async (req, res) => {
    try {
-      const { limit = 4, skip = 0 } = req.query
-      const files = await File.find({}).limit(+limit).skip(+skip)
+      // const { limit = 4, skip = 0 } = req.query
+      const files = await File.find({})
       return res.status(STATUS.SUCCESS).json(files)
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
