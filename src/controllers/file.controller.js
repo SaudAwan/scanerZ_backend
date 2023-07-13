@@ -139,18 +139,7 @@ controller.generateQRcode = async (req, res, next) => {
       if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
       const qrCode = await qrcode.toDataURL(mask)
       await res.contentType('image/png')
-      await res.send(qrCode)
-      // }
-      // else{
-      //    const file = req.files.file
-      // if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
-      // const result = await cloudinary.uploader.upload(file.tempFilePath)
-      // let mask = result
-      // if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
-      // const qrCode = await qrcode.toDataURL(mask)
-      // await res.contentType('image/png')
-      // await res.send(qrCode)
-      // }
+      await res.send(qrCode)  
       
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
