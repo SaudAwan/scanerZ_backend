@@ -14,6 +14,9 @@ const fileSchema = new Schema({
       type: String,
       require: true,
    },
+   qrCode: {
+      type: String
+   },
    user: {
       type: Schema.Types.ObjectId,
       ref: 'User',

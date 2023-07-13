@@ -17,14 +17,22 @@ cloudinary.config({
 controller.uploadFile = async (req, res) => {
    try {
       const file = req.files.file
+      console.log(file, 'here in the file');
       if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
       const result = await cloudinary.uploader.upload(file.tempFilePath)
       console.log(result.url, 'result.url')
+      let mask = result.url
+      if (!isValidURL(result.url)) mask = process.env.FRONTEND_DOMAIN + `file/${result.url}`
+      const qrCode = await qrcode.toDataURL(mask)
+      console.log(qrCode, 'qr code')
+      // await res.contentType('image/png')
+      // await res.send(qrCode)
       const newFile = await new File({
          title: req.body.title,
-         file: result.url,
+         file: result.secure_url,
          user: req.user._id,
          formate: file.mimetype,
+         qrCode: qrCode
       })
       fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
@@ -36,6 +44,7 @@ controller.uploadFile = async (req, res) => {
 
 controller.saveUrl = async (req, res) => {
    try {
+      console.log(req.body);
       // const file = req.files.file
       // if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
       // const result = await cloudinary.uploader.upload(file.tempFilePath)
@@ -45,10 +54,11 @@ controller.saveUrl = async (req, res) => {
          file: req.body.url,
          user: req.user._id,
          formate: "urls",
+         qrCode: req.body.qrCode
       })
       // fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
-      res.status(STATUS.SUCCESS).json(newFile)
+      res.status(STATUS.SUCCESS).json({newFile: newFile, message: 'File Saved'})
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
    }
@@ -122,12 +132,26 @@ controller.deleteFile = async (req, res, next) => {
 
 controller.generateQRcode = async (req, res, next) => {
    try {
-      const link = req.query.link
+      // if(req.query){
+      let link = req.query.link
+      console.log(link);
       let mask = link
       if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
-      const qrCode = await qrcode.toBuffer(mask)
+      const qrCode = await qrcode.toDataURL(mask)
       await res.contentType('image/png')
       await res.send(qrCode)
+      // }
+      // else{
+      //    const file = req.files.file
+      // if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
+      // const result = await cloudinary.uploader.upload(file.tempFilePath)
+      // let mask = result
+      // if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
+      // const qrCode = await qrcode.toDataURL(mask)
+      // await res.contentType('image/png')
+      // await res.send(qrCode)
+      // }
+      
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
