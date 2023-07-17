@@ -32,7 +32,7 @@ controller.uploadFile = async (req, res) => {
          title: req.body.title,
          file: result.secure_url,
          user: req.user._id,
-         format: file.mimetype,
+         formate: file.mimetype,
          qrCode: qrCode,
       })
       fs.unlinkSync(req.files.file.tempFilePath)
@@ -72,11 +72,19 @@ controller.getAllFiles = async (req, res) => {
       if (!userId) {
          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
       }
-      const { page } = 1
-      const pageSize = 2
+      const { page } = req.query
+      const pageSize = 8
       const skipCount = (page - 1) * pageSize
-      const files = await File.find({ user: userId }).skip(skipCount).limit(pageSize)
-      return res.status(STATUS.SUCCESS).json(files)
+      let files
+      let totalFiles
+      let totalPages
+      files = await File.find({ user: userId }).skip(skipCount).limit(pageSize)
+      totalFiles = await File.countDocuments({ user: userId })
+      totalPages = Math.ceil(totalFiles / pageSize)
+      if (files.length < 1) {
+         return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
+      }
+      return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
@@ -111,13 +119,27 @@ controller.getFileWithFormate = async (req, res) => {
       if (!userId) {
          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
       }
-      console.log(userId)
       const formate = req.query.formate
-      const files = await File.find({
+      const { page } = req.query
+      const pageSize = 8
+      const skipCount = (page - 1) * pageSize
+      let files
+      let totalFiles
+      let totalPages
+      console.log(userId)
+
+      files = await File.find({
          formate: { $in: formate },
          user: userId,
       })
-      return res.status(STATUS.SUCCESS).json(files)
+         .skip(skipCount)
+         .limit(pageSize)
+      totalFiles = await File.countDocuments({ user: userId })
+      totalPages = Math.ceil(totalFiles / pageSize)
+      if (files.length < 1) {
+         return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
+      }
+      return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
    }

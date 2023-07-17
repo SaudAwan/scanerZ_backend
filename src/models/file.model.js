@@ -11,7 +11,7 @@ const fileSchema = new Schema(
          type: String,
          required: true,
       },
-      format: {
+      formate: {
          type: String,
          required: true,
       },
