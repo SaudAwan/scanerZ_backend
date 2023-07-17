@@ -5,6 +5,7 @@ const fs = require('fs')
 const qrcode = require('qrcode')
 const isValidURL = require('../utils/isValidURL.utils')
 const createError = require('../utils/createError.utils')
+const verifyToken = require('../utils/verifyToken.utils')
 
 controller = {}
 
@@ -17,7 +18,7 @@ cloudinary.config({
 controller.uploadFile = async (req, res) => {
    try {
       const file = req.files.file
-      console.log(file, 'here in the file');
+      console.log(file, 'here in the file')
       if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
       const result = await cloudinary.uploader.upload(file.tempFilePath)
       console.log(result.url, 'result.url')
@@ -31,8 +32,8 @@ controller.uploadFile = async (req, res) => {
          title: req.body.title,
          file: result.secure_url,
          user: req.user._id,
-         formate: file.mimetype,
-         qrCode: qrCode
+         format: file.mimetype,
+         qrCode: qrCode,
       })
       fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
@@ -44,7 +45,7 @@ controller.uploadFile = async (req, res) => {
 
 controller.saveUrl = async (req, res) => {
    try {
-      console.log(req.body);
+      console.log(req.body)
       // const file = req.files.file
       // if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
       // const result = await cloudinary.uploader.upload(file.tempFilePath)
@@ -53,12 +54,12 @@ controller.saveUrl = async (req, res) => {
          title: req.body.title,
          file: req.body.url,
          user: req.user._id,
-         formate: "urls",
-         qrCode: req.body.qrCode
+         formate: 'urls',
+         qrCode: req.body.qrCode,
       })
       // fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
-      res.status(STATUS.SUCCESS).json({newFile: newFile, message: 'File Saved'})
+      res.status(STATUS.SUCCESS).json({ newFile: newFile, message: 'File Saved' })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
    }
@@ -66,8 +67,15 @@ controller.saveUrl = async (req, res) => {
 
 controller.getAllFiles = async (req, res) => {
    try {
-      // const { limit = 4, skip = 0 } = req.query
-      const files = await File.find({})
+      console.log('here', req.headers)
+      const userId = verifyToken(req.headers.authorization)
+      if (!userId) {
+         return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
+      }
+      const { page } = 1
+      const pageSize = 2
+      const skipCount = (page - 1) * pageSize
+      const files = await File.find({ user: userId }).skip(skipCount).limit(pageSize)
       return res.status(STATUS.SUCCESS).json(files)
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
@@ -98,9 +106,16 @@ controller.getUserFiles = async (req, res) => {
 
 controller.getFileWithFormate = async (req, res) => {
    try {
+      const userId = verifyToken(req.headers.authorization)
+      console.log(userId)
+      if (!userId) {
+         return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
+      }
+      console.log(userId)
       const formate = req.query.formate
       const files = await File.find({
          formate: { $in: formate },
+         user: userId,
       })
       return res.status(STATUS.SUCCESS).json(files)
    } catch (error) {
@@ -134,13 +149,12 @@ controller.generateQRcode = async (req, res, next) => {
    try {
       // if(req.query){
       let link = req.query.link
-      console.log(link);
+      console.log(link)
       let mask = link
       if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
       const qrCode = await qrcode.toDataURL(mask)
       await res.contentType('image/png')
-      await res.send(qrCode)  
-      
+      await res.send(qrCode)
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
