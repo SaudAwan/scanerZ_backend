@@ -5,6 +5,7 @@ const fs = require('fs')
 const qrcode = require('qrcode')
 const isValidURL = require('../utils/isValidURL.utils')
 const createError = require('../utils/createError.utils')
+const verifyToken = require('../utils/verifyToken.utils')
 
 controller = {}
 
@@ -17,9 +18,14 @@ cloudinary.config({
 controller.uploadFile = async (req, res) => {
    try {
       const file = req.files.file
-      console.log(file, 'here in the file');
+      console.log(file, 'here in the file')
       if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
-      const result = await cloudinary.uploader.upload(file.tempFilePath)
+      let result
+      if (file.mimetype === 'video/mp4') {
+         result = await cloudinary.uploader.upload(file.tempFilePath, { resource_type: 'video' })
+      } else {
+         result = await cloudinary.uploader.upload(file.tempFilePath)
+      }
       console.log(result.url, 'result.url')
       let mask = result.url
       if (!isValidURL(result.url)) mask = process.env.FRONTEND_DOMAIN + `file/${result.url}`
@@ -32,7 +38,7 @@ controller.uploadFile = async (req, res) => {
          file: result.secure_url,
          user: req.user._id,
          formate: file.mimetype,
-         qrCode: qrCode
+         qrCode: qrCode,
       })
       fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
@@ -44,7 +50,7 @@ controller.uploadFile = async (req, res) => {
 
 controller.saveUrl = async (req, res) => {
    try {
-      console.log(req.body);
+      console.log(req.body)
       // const file = req.files.file
       // if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
       // const result = await cloudinary.uploader.upload(file.tempFilePath)
@@ -53,12 +59,12 @@ controller.saveUrl = async (req, res) => {
          title: req.body.title,
          file: req.body.url,
          user: req.user._id,
-         formate: "urls",
-         qrCode: req.body.qrCode
+         formate: 'urls',
+         qrCode: req.body.qrCode,
       })
       // fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
-      res.status(STATUS.SUCCESS).json({newFile: newFile, message: 'File Saved'})
+      res.status(STATUS.SUCCESS).json({ newFile: newFile, message: 'File Saved' })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
    }
@@ -66,9 +72,23 @@ controller.saveUrl = async (req, res) => {
 
 controller.getAllFiles = async (req, res) => {
    try {
-      // const { limit = 4, skip = 0 } = req.query
-      const files = await File.find({})
-      return res.status(STATUS.SUCCESS).json(files)
+      const userId = verifyToken(req.headers.authorization)
+      if (!userId) {
+         return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
+      }
+      const { page } = req.query
+      const pageSize = 8
+      const skipCount = (page - 1) * pageSize
+      let files
+      let totalFiles
+      let totalPages
+      files = await File.find({ user: userId }).skip(skipCount).limit(pageSize)
+      totalFiles = await File.countDocuments({ user: userId })
+      totalPages = Math.ceil(totalFiles / pageSize)
+      if (files.length < 1) {
+         return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
+      }
+      return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
@@ -98,11 +118,69 @@ controller.getUserFiles = async (req, res) => {
 
 controller.getFileWithFormate = async (req, res) => {
    try {
+      const userId = verifyToken(req.headers.authorization)
+      // console.log(userId)
+      if (!userId) {
+         return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
+      }
       const formate = req.query.formate
-      const files = await File.find({
-         formate: { $in: formate },
+      const { page } = req.query
+      console.log(req.query)
+      const pageSize = 8
+      const skipCount = (page - 1) * pageSize
+      let files
+      let totalFiles
+      let totalPages
+      // console.log(userId)
+
+      files = await File.find({
+         formate: { $regex: new RegExp(formate, 'i') },
+         user: userId,
       })
-      return res.status(STATUS.SUCCESS).json(files)
+         .skip(skipCount)
+         .limit(pageSize)
+      totalFiles = await File.countDocuments({ formate: { $regex: new RegExp(formate, 'i') }, user: userId })
+      totalPages = Math.ceil(totalFiles / pageSize)
+      if (files.length < 1) {
+         return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
+      }
+      return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
+   } catch (error) {
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
+   }
+}
+
+// get Files By File Name
+
+controller.getFileWithName = async (req, res) => {
+   try {
+      const userId = verifyToken(req.headers.authorization)
+      // console.log(userId)
+      if (!userId) {
+         return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
+      }
+      const fileName = req.query.fileName
+      const { page } = req.query
+      console.log(req.query)
+      const pageSize = 8
+      const skipCount = (page - 1) * pageSize
+      let files
+      let totalFiles
+      let totalPages
+      // console.log(userId)
+
+      files = await File.find({
+         title: { $regex: new RegExp(fileName, 'i') },
+         user: userId,
+      })
+         .skip(skipCount)
+         .limit(pageSize)
+      totalFiles = await File.countDocuments({ title: { $regex: new RegExp(fileName, 'i') }, user: userId })
+      totalPages = Math.ceil(totalFiles / pageSize)
+      if (files.length < 1) {
+         return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
+      }
+      return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
    }
@@ -134,13 +212,12 @@ controller.generateQRcode = async (req, res, next) => {
    try {
       // if(req.query){
       let link = req.query.link
-      console.log(link);
+      console.log(link)
       let mask = link
       if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
       const qrCode = await qrcode.toDataURL(mask)
       await res.contentType('image/png')
-      await res.send(qrCode)  
-      
+      await res.send(qrCode)
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
