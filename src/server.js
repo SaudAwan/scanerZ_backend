@@ -26,7 +26,7 @@ app.use('/api/v1', routes)
 
 const startServer = async () => {
    try {
-      const PORT = process.env.PORT || 4000
+      const PORT = process.env.PORT || 80
       await connectToMongoDB()
       app.listen(PORT, () => {
          console.log(`server started on port http://localhost:${PORT}`)
