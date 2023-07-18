@@ -76,13 +76,18 @@ controller.getAllFiles = async (req, res) => {
       if (!userId) {
          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
       }
-      const { page } = req.query
+      console.log(req.query, 'here')
+      const { page, sortoption } = req.query
+
       const pageSize = 8
       const skipCount = (page - 1) * pageSize
       let files
       let totalFiles
       let totalPages
-      files = await File.find({ user: userId }).skip(skipCount).limit(pageSize)
+      files = await File.find({ user: userId })
+         .sort({ createdAt: sortoption })
+         .skip(skipCount)
+         .limit(pageSize)
       totalFiles = await File.countDocuments({ user: userId })
       totalPages = Math.ceil(totalFiles / pageSize)
       if (files.length < 1) {
@@ -124,7 +129,7 @@ controller.getFileWithFormate = async (req, res) => {
          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
       }
       const formate = req.query.formate
-      const { page } = req.query
+      const { page, sortoption } = req.query
       console.log(req.query)
       const pageSize = 8
       const skipCount = (page - 1) * pageSize
@@ -137,6 +142,7 @@ controller.getFileWithFormate = async (req, res) => {
          formate: { $regex: new RegExp(formate, 'i') },
          user: userId,
       })
+         .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize)
       totalFiles = await File.countDocuments({ formate: { $regex: new RegExp(formate, 'i') }, user: userId })
@@ -144,7 +150,7 @@ controller.getFileWithFormate = async (req, res) => {
       if (files.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
       }
-      return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
+      return res.status(STATUS.SUCCESS).json({ message: 'files found', totalFiles, totalPages, files })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
    }
@@ -160,7 +166,7 @@ controller.getFileWithName = async (req, res) => {
          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
       }
       const fileName = req.query.fileName
-      const { page } = req.query
+      const { page, sortoption } = req.query
       console.log(req.query)
       const pageSize = 8
       const skipCount = (page - 1) * pageSize
@@ -173,6 +179,7 @@ controller.getFileWithName = async (req, res) => {
          title: { $regex: new RegExp(fileName, 'i') },
          user: userId,
       })
+         .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize)
       totalFiles = await File.countDocuments({ title: { $regex: new RegExp(fileName, 'i') }, user: userId })
