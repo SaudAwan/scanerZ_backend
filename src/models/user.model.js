@@ -2,28 +2,39 @@ const mongoose = require('mongoose')
 const { hashPassword, comparePassword } = require('../utils/hashPassword.utils')
 const jwt = require('jsonwebtoken')
 
-const userSchema = new mongoose.Schema({
-   email: {
-      type: String,
-      required: true,
-      unique: true,
-      validate: {
-         validator: function (value) {
-            return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value)
+const userSchema = new mongoose.Schema(
+   {
+      email: {
+         type: String,
+         required: true,
+         unique: true,
+         validate: {
+            validator: function (value) {
+               return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value)
+            },
+            message: 'Email is invalid',
          },
-         message: 'Email is invalid',
+      },
+      password: {
+         type: String,
+         required: true,
+         minlength: 6,
+      },
+      isAdmin: {
+         type: Boolean,
+         default: false,
+      },
+      isVerified: {
+         type: Boolean,
+         default: false,
+      },
+      passwordSecret: {
+         type: String,
+         required: false,
       },
    },
-   password: {
-      type: String,
-      required: true,
-      minlength: 6,
-   },
-   isAdmin: {
-      type: Boolean,
-      default: false,
-   },
-})
+   { timestamps: true }
+)
 
 userSchema.pre('save', async function (next) {
    try {
