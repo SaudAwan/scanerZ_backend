@@ -21,10 +21,6 @@ controller.register = async (req, res, next) => {
       console.log(user)
       const sent = sendEmail(email, email, 'emailVerification', sixDigitCode)
       if (sent) {
-         const user = await User.create({
-            ...req.body,
-            passwordSecret: sixDigitCode,
-         })
          return res.status(STATUS.CREATED).json({ message: 'OTP sent successfully' })
       } else {
          return res.status(STATUS.BAD_REQUEST).json({ message: 'Failed to send email' })
@@ -70,7 +66,7 @@ controller.login = async (req, res, next) => {
          const sixDigitCode = generateCode()
          const sent = sendEmail(user.email, user.email, 'emailVerification', sixDigitCode)
          if (sent) {
-            return res.status(STATUS.CREATED).json({ message: 'User not verified, OTP sent again!' })
+            return res.status(STATUS.BAD_REQUEST).json({ message: 'User not verified, OTP sent again!' })
          } else {
             return res.status(STATUS.BAD_REQUEST).json({ message: 'Failed to send email' })
          }
