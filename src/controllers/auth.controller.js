@@ -66,7 +66,16 @@ controller.login = async (req, res, next) => {
    try {
       const user = await User.findOne({ email: req.body.email })
       if (!user) return res.status(STATUS.NOT_FOUND).json({ message: 'User not existed' })
-      if (!user.isVerified) return res.status(STATUS.NOT_FOUND).json({ message: 'User not verified' })
+      if (!user.isVerified) {
+         const sixDigitCode = generateCode()
+         const sent = sendEmail(user.email, user.email, 'emailVerification', sixDigitCode)
+         if (sent) {
+            return res.status(STATUS.CREATED).json({ message: 'User not verified, OTP sent again!' })
+         } else {
+            return res.status(STATUS.BAD_REQUEST).json({ message: 'Failed to send email' })
+         }
+         // return res.status(STATUS.NOT_FOUND).json({ message: 'User not verified' })
+      }
 
       const isMatch = await user.comparePassword(req.body.password)
       if (!isMatch) return res.status(STATUS.NOT_FOUND).json({ message: 'Wrong credentials' })
