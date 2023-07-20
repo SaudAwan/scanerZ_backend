@@ -19,8 +19,12 @@ controller.register = async (req, res, next) => {
          passwordSecret: sixDigitCode,
       })
       console.log(user)
-      const sent = sendEmail(email, user.email, 'emailVerification', user.passwordSecret)
+      const sent = sendEmail(email, email, 'emailVerification', sixDigitCode)
       if (sent) {
+         const user = await User.create({
+            ...req.body,
+            passwordSecret: sixDigitCode,
+         })
          return res.status(STATUS.CREATED).json({ message: 'OTP sent successfully' })
       } else {
          return res.status(STATUS.BAD_REQUEST).json({ message: 'Failed to send email' })
@@ -62,6 +66,7 @@ controller.login = async (req, res, next) => {
    try {
       const user = await User.findOne({ email: req.body.email })
       if (!user) return res.status(STATUS.NOT_FOUND).json({ message: 'User not existed' })
+      if (!user.isVerified) return res.status(STATUS.NOT_FOUND).json({ message: 'User not verified' })
 
       const isMatch = await user.comparePassword(req.body.password)
       if (!isMatch) return res.status(STATUS.NOT_FOUND).json({ message: 'Wrong credentials' })
