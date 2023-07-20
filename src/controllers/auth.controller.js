@@ -34,6 +34,7 @@ controller.register = async (req, res, next) => {
 controller.verifyEmail = async (req, res) => {
    try {
       const { email, code } = req.body
+      console.log(req.body)
       if (!email) {
          return res.status(STATUS.BAD_REQUEST).json({ message: 'Email is required' })
       }
@@ -41,6 +42,7 @@ controller.verifyEmail = async (req, res) => {
          return res.status(STATUS.BAD_REQUEST).json({ message: 'Code is required' })
       }
       const user = await User.findOne({ email })
+      console.log(user)
       if (!user) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'Email is not existed' })
       }
@@ -64,6 +66,8 @@ controller.login = async (req, res, next) => {
       if (!user) return res.status(STATUS.NOT_FOUND).json({ message: 'User not existed' })
       if (!user.isVerified) {
          const sixDigitCode = generateCode()
+         user.passwordSecret = sixDigitCode
+         await user.save()
          const sent = sendEmail(user.email, user.email, 'emailVerification', sixDigitCode)
          if (sent) {
             return res.status(STATUS.BAD_REQUEST).json({ message: 'User not verified, OTP sent again!' })
