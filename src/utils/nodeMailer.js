@@ -24,7 +24,7 @@ async function sendEmail(to, fullName, type, code, result) {
 
       subject = 'Register ScanerZ'
    }
-   console.log('here node mailer', to, file, subject)
+   // console.log('here node mailer', to, file, subject)
    return send(to, file, subject)
 }
 
