@@ -1,27 +1,15 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const fileSchema = new Schema(
+const folderSchema = new Schema(
    {
-      file: {
+      folderName: {
          type: String,
          required: true,
-      },
-      title: {
-         type: String,
-         required: true,
-      },
-      formate: {
-         type: String,
-         required: true,
-      },
-      qrCode: {
-         type: String,
       },
       folderId: {
          type: Schema.Types.ObjectId,
          ref: 'Folder',
-         required: true
       },
       user: {
          type: Schema.Types.ObjectId,
@@ -34,6 +22,8 @@ const fileSchema = new Schema(
    }
 )
 
-const File = mongoose.model('File', fileSchema)
+folderSchema.index({ createdAt: 1 })
 
-module.exports = File
+const Folder = mongoose.model('Folder', folderSchema)
+
+module.exports = Folder

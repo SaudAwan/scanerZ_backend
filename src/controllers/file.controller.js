@@ -18,7 +18,7 @@ cloudinary.config({
 controller.uploadFile = async (req, res) => {
    try {
       const file = req.files.file
-      console.log(file, 'here in the file')
+      // console.log(file, 'here in the file')
       if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
       let result
       if (file.mimetype === 'video/mp4') {
@@ -26,7 +26,7 @@ controller.uploadFile = async (req, res) => {
       } else {
          result = await cloudinary.uploader.upload(file.tempFilePath)
       }
-      console.log(result.url, 'result.url')
+      // console.log(result.url, 'result.url')
       let mask = result.url
       if (!isValidURL(result.url)) mask = process.env.FRONTEND_DOMAIN + `file/${result.url}`
       const qrCode = await qrcode.toDataURL(mask)
@@ -39,6 +39,7 @@ controller.uploadFile = async (req, res) => {
          user: req.user._id,
          formate: file.mimetype,
          qrCode: qrCode,
+         folderId: req.body.parentFolder,
       })
       fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
@@ -102,7 +103,7 @@ controller.getAllFiles = async (req, res) => {
 controller.getFile = async (req, res) => {
    try {
       const fileId = req.params.id
-      const file = await File.findById(fileId)
+      const file = await File.findById(fileId).populate('folderId', 'folderName').exec()
       if (!file) return res.status(STATUS.NOT_FOUND).json({ message: 'File not found' })
       return res.status(STATUS.SUCCESS).json(file)
    } catch (error) {
