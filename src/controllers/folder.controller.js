@@ -18,13 +18,13 @@ cloudinary.config({
 
 controller.uploadFolder = async (req, res) => {
    try {
-      const { folderName, parentFolder } = req.body
+      const { folderName, folderId } = req.body
       console.log(folderName, 'here in the body')
       if (!folderName) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
 
       const newFolder = new Folder({
          folderName: folderName,
-         folderId: parentFolder ? parentFolder : null,
+         folderId: folderId ? folderId : null,
          user: req.user._id,
       })
       await newFolder.save()
@@ -71,20 +71,24 @@ controller.getAllFolders = async (req, res) => {
       let folders
       let totalFolders
       let totalPages
-      folders = await Folder.find({ user: userId })
+      folders = await Folder.find({ user: userId, folderId: null })
          .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize)
-         .populate('folderId', '-__v')
+         // .populate('folderId', '-__v')
          //  .populate('FolderId', '_v')
          .exec()
       console.log(folders)
-      totalFolders = await Folder.countDocuments({ user: userId })
+      for (let index = 0; index < folders.length; index++) {
+         const element = folders[index];
+         console.log(element);
+      }
+      totalFolders = await Folder.countDocuments({ user: userId, folderId: null })
       totalPages = Math.ceil(totalFolders / pageSize)
       if (folders.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'Folders not found' })
       }
-      return res.status(STATUS.SUCCESS).json({ message: 'folders found', totalFolders, totalPages, folders })
+      // return res.status(STATUS.SUCCESS).json({ message: 'folders found', totalFolders, totalPages, folders })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
@@ -112,19 +116,19 @@ controller.getSingleFolder = async (req, res) => {
 
       totalFolders = await Folder.countDocuments({ user: userId, folderId })
       totalPages = Math.ceil(totalFolders / pageSize)
-      console.log(folders, 'folders', totalFolders, totalPages)
+      // console.log(folders, 'folders', totalFolders, totalPages)
 
-      
       files = await File.find({ user: userId, folderId })
+         .populate("folderId","folderName")
          .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize)
          .exec()
-
+      console.log(files);
       totalFiles = await File.countDocuments({ user: userId, folderId })
       filePages = Math.ceil(totalFiles / pageSize)
 
-      console.log(files)
+      // console.log(folders.concat(files), 'merged')
 
       if (folders.length < 1 && files.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'content not found' })
@@ -132,9 +136,8 @@ controller.getSingleFolder = async (req, res) => {
       return res.status(STATUS.SUCCESS).json({
          message: 'content found',
          totalRecords: totalFolders + totalFiles,
-         totalPage: totalPages + filePages,
-         folders,
-         files,
+         totalPage: Math.ceil((totalFolders + totalFiles) / pageSize),
+         content: folders.concat(files),
       })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
