@@ -1,5 +1,6 @@
 const STATUS = require('../constant/status.constant')
 const File = require('../models/file.model')
+const Folder = require('../models/folder.modal')
 const cloudinary = require('cloudinary').v2
 const fs = require('fs')
 const qrcode = require('qrcode')
@@ -39,7 +40,7 @@ controller.uploadFile = async (req, res) => {
          user: req.user._id,
          formate: file.mimetype,
          qrCode: qrCode,
-         folderId: req.body.parentFolder,
+         folderId: req.body.folderId,
       })
       fs.unlinkSync(req.files.file.tempFilePath)
       await newFile.save()
@@ -59,6 +60,7 @@ controller.saveUrl = async (req, res) => {
       const newFile = await new File({
          title: req.body.title,
          file: req.body.url,
+         folderId: req.body.folderId,
          user: req.user._id,
          formate: 'urls',
          qrCode: req.body.qrCode,
@@ -159,7 +161,7 @@ controller.getFileWithFormate = async (req, res) => {
 
 // get Files By File Name
 
-controller.getFileWithName = async (req, res) => {
+controller.getFileFolderWithName = async (req, res) => {
    try {
       const userId = verifyToken(req.headers.authorization)
       // console.log(userId)
@@ -171,10 +173,22 @@ controller.getFileWithName = async (req, res) => {
       console.log(req.query)
       const pageSize = 8
       const skipCount = (page - 1) * pageSize
-      let files
-      let totalFiles
-      let totalPages
+      let folders, files
+      let totalFolders, totalFiles
+      let totalPages, filePages
       // console.log(userId)
+
+      folders = await Folder.find({ folderName: { $regex: new RegExp(fileName, 'i') }, user: userId })
+         .sort({ createdAt: sortoption })
+         .skip(skipCount)
+         .limit(pageSize)
+         .exec()
+
+      totalFolders = await Folder.countDocuments({
+         folderName: { $regex: new RegExp(fileName, 'i') },
+         user: userId,
+      })
+      totalPages = Math.ceil(totalFolders / pageSize)
 
       files = await File.find({
          title: { $regex: new RegExp(fileName, 'i') },
@@ -184,11 +198,17 @@ controller.getFileWithName = async (req, res) => {
          .skip(skipCount)
          .limit(pageSize)
       totalFiles = await File.countDocuments({ title: { $regex: new RegExp(fileName, 'i') }, user: userId })
-      totalPages = Math.ceil(totalFiles / pageSize)
-      if (files.length < 1) {
-         return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
+      filePages = Math.ceil(totalFiles / pageSize)
+
+      if (folders.length < 1 && files.length < 1) {
+         return res.status(STATUS.NOT_FOUND).json({ message: 'content not found' })
       }
-      return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
+      return res.status(STATUS.SUCCESS).json({
+         message: 'search found',
+         totalRecords: totalFolders + totalFiles,
+         totalPage: Math.ceil((totalFolders + totalFiles) / pageSize),
+         content: folders.concat(files),
+      })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
    }

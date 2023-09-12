@@ -88,7 +88,7 @@ controller.getAllFolders = async (req, res) => {
       if (folders.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'Folders not found' })
       }
-      // return res.status(STATUS.SUCCESS).json({ message: 'folders found', totalFolders, totalPages, folders })
+      return res.status(STATUS.SUCCESS).json({ message: 'folders found', totalFolders, totalPages, folders })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
@@ -119,7 +119,7 @@ controller.getSingleFolder = async (req, res) => {
       // console.log(folders, 'folders', totalFolders, totalPages)
 
       files = await File.find({ user: userId, folderId })
-         .populate("folderId","folderName")
+         // .populate("folderId","folderName")
          .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize)
@@ -127,8 +127,6 @@ controller.getSingleFolder = async (req, res) => {
       console.log(files);
       totalFiles = await File.countDocuments({ user: userId, folderId })
       filePages = Math.ceil(totalFiles / pageSize)
-
-      // console.log(folders.concat(files), 'merged')
 
       if (folders.length < 1 && files.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'content not found' })
