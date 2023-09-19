@@ -170,9 +170,8 @@ controller.getFileFolderWithName = async (req, res) => {
       }
       const fileName = req.query.fileName
       const { page, sortoption } = req.query
-      console.log(req.query)
       const pageSize = 24
-      const skipCount = ((page - 1) * pageSize) / 2
+      const skipCount = (page - 1) * pageSize
       let folders, files
       let totalFolders, totalFiles
       let totalPages, filePages
@@ -180,8 +179,6 @@ controller.getFileFolderWithName = async (req, res) => {
 
       folders = await Folder.find({ folderName: { $regex: new RegExp(fileName, 'i') }, user: userId })
          .sort({ createdAt: sortoption })
-         .skip(skipCount)
-         .limit(pageSize / 2)
          .exec()
 
       totalFolders = await Folder.countDocuments({
@@ -193,22 +190,20 @@ controller.getFileFolderWithName = async (req, res) => {
       files = await File.find({
          title: { $regex: new RegExp(fileName, 'i') },
          user: userId,
-      })
-         .sort({ createdAt: sortoption })
-         .skip(skipCount)
-         .limit(pageSize / 2)
+      }).sort({ createdAt: sortoption })
       totalFiles = await File.countDocuments({ title: { $regex: new RegExp(fileName, 'i') }, user: userId })
       filePages = Math.ceil(totalFiles / pageSize)
-
-      console.log(folders, files, totalFiles, totalFolders)
       if (folders.length < 1 && files.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'search not found' })
       }
+      const serachData = folders.concat(files)
+      const paginatedData = serachData.slice(skipCount, skipCount + pageSize)
+
       return res.status(STATUS.SUCCESS).json({
          message: 'search found',
          totalRecords: totalFolders + totalFiles,
          totalPage: Math.ceil((folders.length + files.length) / pageSize),
-         content: folders.concat(files),
+         content: paginatedData,
       })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
@@ -241,7 +236,6 @@ controller.generateQRcode = async (req, res, next) => {
    try {
       // if(req.query){
       let link = req.query.link
-      console.log(link)
       let mask = link
       if (!isValidURL(link)) mask = process.env.FRONTEND_DOMAIN + `file/${link}`
       const qrCode = await qrcode.toDataURL(mask)

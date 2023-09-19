@@ -10,7 +10,7 @@ const controller = {}
 controller.register = async (req, res, next) => {
    try {
       const { email } = req.body
-      console.log(req.body)
+
       const sixDigitCode = generateCode()
       const isUserExisted = await User.findOne({ email })
       if (isUserExisted) return res.status(STATUS.CONFLICT).json({ message: 'User already existed' })
@@ -18,7 +18,7 @@ controller.register = async (req, res, next) => {
          ...req.body,
          passwordSecret: sixDigitCode,
       })
-      console.log(user)
+
       const sent = sendEmail(email, email, 'emailVerification', sixDigitCode)
       if (sent) {
          return res.status(STATUS.CREATED).json({ message: 'OTP sent successfully' })
@@ -34,7 +34,7 @@ controller.register = async (req, res, next) => {
 controller.verifyEmail = async (req, res) => {
    try {
       const { email, code } = req.body
-      console.log(req.body)
+
       if (!email) {
          return res.status(STATUS.BAD_REQUEST).json({ message: 'Email is required' })
       }
@@ -42,7 +42,7 @@ controller.verifyEmail = async (req, res) => {
          return res.status(STATUS.BAD_REQUEST).json({ message: 'Code is required' })
       }
       const user = await User.findOne({ email })
-      console.log(user)
+
       if (!user) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'Email is not existed' })
       }

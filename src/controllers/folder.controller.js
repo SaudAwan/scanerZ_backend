@@ -19,7 +19,7 @@ cloudinary.config({
 controller.uploadFolder = async (req, res) => {
    try {
       const { folderName, folderId } = req.body
-      console.log(folderName, 'here in the body')
+      // console.log(folderName, 'here in the body')
       if (!folderName) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
 
       const newFolder = new Folder({
@@ -28,7 +28,7 @@ controller.uploadFolder = async (req, res) => {
          user: req.user._id,
       })
       await newFolder.save()
-      console.log(newFolder)
+      // console.log(newFolder)
       res.status(STATUS.SUCCESS).json({ message: 'Folder created successfully', folder: newFolder })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: error.message })
@@ -37,11 +37,6 @@ controller.uploadFolder = async (req, res) => {
 
 controller.saveUrl = async (req, res) => {
    try {
-      console.log(req.body)
-      // const file = req.files.file
-      // if (!file) return res.status(STATUS.BAD_REQUEST).json({ message: 'File is required' })
-      // const result = await cloudinary.uploader.upload(file.tempFilePath)
-      // console.log(result.url, 'result.url')
       const newFile = await new File({
          title: req.body.title,
          file: req.body.url,
@@ -63,7 +58,7 @@ controller.getAllFolders = async (req, res) => {
       if (!userId) {
          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
       }
-      console.log(req.query, 'here')
+      // console.log(req.query, 'here')
       const { page, sortoption } = req.query
 
       const pageSize = 24
@@ -75,10 +70,8 @@ controller.getAllFolders = async (req, res) => {
          .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize)
-         // .populate('folderId', '-__v')
-         //  .populate('FolderId', '_v')
          .exec()
-      console.log(folders)
+      // console.log(folders)
       for (let index = 0; index < folders.length; index++) {
          const element = folders[index]
          console.log(element)
@@ -100,7 +93,7 @@ controller.getSingleFolder = async (req, res) => {
       if (!userId) {
          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
       }
-      console.log(req.query, 'here')
+      // console.log(req.query, 'here')
       const { page, sortoption, folderId } = req.query
 
       const pageSize = 24
@@ -109,41 +102,46 @@ controller.getSingleFolder = async (req, res) => {
       let totalFolders, totalFiles
       let totalPages, filePages
       folders = await Folder.find({ user: userId, folderId })
-         .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize / 2)
          .exec()
 
       totalFolders = await Folder.countDocuments({ user: userId, folderId })
       totalPages = Math.ceil(totalFolders / pageSize)
-      console.log(folders, 'folders', totalFolders, totalPages)
+      // console.log(folders, 'folders', totalFolders, totalPages)
 
       files = await File.find({ user: userId, folderId })
-         // .populate("folderId","folderName")
-         .sort({ createdAt: sortoption })
          .skip(skipCount)
          .limit(pageSize / 2)
          .exec()
-      // console.log(files);
+
       totalFiles = await File.countDocuments({ user: userId, folderId })
       filePages = Math.ceil(totalFiles / pageSize)
 
       if (folders.length < 1 && files.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'content not found' })
       }
-      console.log(files, 'files', totalFiles, filePages)
+      const combinedContent = folders.concat(files)
+
+      // Sort the combined array based on the dynamic `sortoption`
+      combinedContent.sort((a, b) => {
+         if (sortoption == -1) {
+            return b.createdAt - a.createdAt
+         } else {
+            return a.createdAt - b.createdAt
+         }
+      })
+
       return res.status(STATUS.SUCCESS).json({
          message: 'content found',
          totalRecords: totalFolders + totalFiles,
          totalPage: Math.ceil((totalFolders + totalFiles) / pageSize),
-         content: folders.concat(files),
+         content: combinedContent,
       })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
-
-const MAX_NESTING_LEVEL = 3 // Set the maximum nesting level you want
 
 controller.getSidebarFolders = async (req, res) => {
    try {
@@ -186,8 +184,6 @@ controller.getSidebarFolders = async (req, res) => {
             return await populateContent(rootFolder, 0)
          })
       )
-
-      console.log(rootFoldersWithContent, 'root folders with content')
       return res.status(STATUS.SUCCESS).json({
          message: 'content found',
          folders: rootFoldersWithContent,
@@ -196,100 +192,6 @@ controller.getSidebarFolders = async (req, res) => {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
    }
 }
-
-// controller.getFile = async (req, res) => {
-//    try {
-//       const fileId = req.params.id
-//       const file = await File.findById(fileId)
-//       if (!file) return res.status(STATUS.NOT_FOUND).json({ message: 'File not found' })
-//       return res.status(STATUS.SUCCESS).json(file)
-//    } catch (error) {
-//       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
-//    }
-// }
-
-// controller.getUserFiles = async (req, res) => {
-//    try {
-//       const { limit = 4, skip = 0 } = req.query
-//       const files = await File.find({ user: req.params.id }).limit(+limit).skip(+skip)
-//       if (!files) return res.status(STATUS.NOT_FOUND).send({ error: 'Files not found' })
-//       return res.status(STATUS.SUCCESS).json(files)
-//    } catch (error) {
-//       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
-//    }
-// }
-
-// controller.getFileWithFormate = async (req, res) => {
-//    try {
-//       const userId = verifyToken(req.headers.authorization)
-//       // console.log(userId)
-//       if (!userId) {
-//          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
-//       }
-//       const formate = req.query.formate
-//       const { page, sortoption } = req.query
-//       console.log(req.query)
-//       const pageSize = 8
-//       const skipCount = (page - 1) * pageSize
-//       let files
-//       let totalFiles
-//       let totalPages
-//       // console.log(userId)
-
-//       files = await File.find({
-//          formate: { $regex: new RegExp(formate, 'i') },
-//          user: userId,
-//       })
-//          .sort({ createdAt: sortoption })
-//          .skip(skipCount)
-//          .limit(pageSize)
-//       totalFiles = await File.countDocuments({ formate: { $regex: new RegExp(formate, 'i') }, user: userId })
-//       totalPages = Math.ceil(totalFiles / pageSize)
-//       if (files.length < 1) {
-//          return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
-//       }
-//       return res.status(STATUS.SUCCESS).json({ message: 'files found', totalFiles, totalPages, files })
-//    } catch (error) {
-//       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
-//    }
-// }
-
-// get Files By File Name
-
-// controller.getFileWithName = async (req, res) => {
-//    try {
-//       const userId = verifyToken(req.headers.authorization)
-//       // console.log(userId)
-//       if (!userId) {
-//          return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
-//       }
-//       const fileName = req.query.fileName
-//       const { page, sortoption } = req.query
-//       console.log(req.query)
-//       const pageSize = 8
-//       const skipCount = (page - 1) * pageSize
-//       let files
-//       let totalFiles
-//       let totalPages
-//       // console.log(userId)
-
-//       files = await File.find({
-//          title: { $regex: new RegExp(fileName, 'i') },
-//          user: userId,
-//       })
-//          .sort({ createdAt: sortoption })
-//          .skip(skipCount)
-//          .limit(pageSize)
-//       totalFiles = await File.countDocuments({ title: { $regex: new RegExp(fileName, 'i') }, user: userId })
-//       totalPages = Math.ceil(totalFiles / pageSize)
-//       if (files.length < 1) {
-//          return res.status(STATUS.NOT_FOUND).json({ message: 'Files not found' })
-//       }
-//       return res.status(STATUS.SUCCESS).json({ message: 'filess found', totalFiles, totalPages, files })
-//    } catch (error) {
-//       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' })
-//    }
-// }
 
 // controller.updateFile = async (req, res) => {
 //    try {
