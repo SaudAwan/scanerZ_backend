@@ -8,7 +8,7 @@ router.post('/uploadFolder', authMiddleware, folderController.uploadFolder)
 // router.get('/qrcode', authMiddleware, fileController.generateQRcode)
 router.get('/get-folders', authMiddleware, folderController.getAllFolders)
 router.get('/get-single-folder', authMiddleware, folderController.getSingleFolder)
-
+router.get('/get-sidebar-folders', authMiddleware, folderController.getSidebarFolders)
 // router.get('/search-files-by-name', authMiddleware, fileController.getFileWithName)
 // router.get('/get-file-with-formate', authMiddleware, fileController.getFileWithFormate)
 // router.get('/get-user-folder/:id', fileController.getUserFiles)

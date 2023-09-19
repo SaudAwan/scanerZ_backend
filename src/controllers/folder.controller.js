@@ -66,7 +66,7 @@ controller.getAllFolders = async (req, res) => {
       console.log(req.query, 'here')
       const { page, sortoption } = req.query
 
-      const pageSize = 8
+      const pageSize = 24
       const skipCount = (page - 1) * pageSize
       let folders
       let totalFolders
@@ -80,8 +80,8 @@ controller.getAllFolders = async (req, res) => {
          .exec()
       console.log(folders)
       for (let index = 0; index < folders.length; index++) {
-         const element = folders[index];
-         console.log(element);
+         const element = folders[index]
+         console.log(element)
       }
       totalFolders = await Folder.countDocuments({ user: userId, folderId: null })
       totalPages = Math.ceil(totalFolders / pageSize)
@@ -103,39 +103,94 @@ controller.getSingleFolder = async (req, res) => {
       console.log(req.query, 'here')
       const { page, sortoption, folderId } = req.query
 
-      const pageSize = 8
-      const skipCount = (page - 1) * pageSize
+      const pageSize = 24
+      const skipCount = ((page - 1) * pageSize) / 2
       let folders, files
       let totalFolders, totalFiles
       let totalPages, filePages
       folders = await Folder.find({ user: userId, folderId })
          .sort({ createdAt: sortoption })
          .skip(skipCount)
-         .limit(pageSize)
+         .limit(pageSize / 2)
          .exec()
 
       totalFolders = await Folder.countDocuments({ user: userId, folderId })
       totalPages = Math.ceil(totalFolders / pageSize)
-      // console.log(folders, 'folders', totalFolders, totalPages)
+      console.log(folders, 'folders', totalFolders, totalPages)
 
       files = await File.find({ user: userId, folderId })
          // .populate("folderId","folderName")
          .sort({ createdAt: sortoption })
          .skip(skipCount)
-         .limit(pageSize)
+         .limit(pageSize / 2)
          .exec()
-      console.log(files);
+      // console.log(files);
       totalFiles = await File.countDocuments({ user: userId, folderId })
       filePages = Math.ceil(totalFiles / pageSize)
 
       if (folders.length < 1 && files.length < 1) {
          return res.status(STATUS.NOT_FOUND).json({ message: 'content not found' })
       }
+      console.log(files, 'files', totalFiles, filePages)
       return res.status(STATUS.SUCCESS).json({
          message: 'content found',
          totalRecords: totalFolders + totalFiles,
          totalPage: Math.ceil((totalFolders + totalFiles) / pageSize),
          content: folders.concat(files),
+      })
+   } catch (error) {
+      return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
+   }
+}
+
+const MAX_NESTING_LEVEL = 3 // Set the maximum nesting level you want
+
+controller.getSidebarFolders = async (req, res) => {
+   try {
+      const userId = verifyToken(req.headers.authorization)
+      if (!userId) {
+         return res.status(STATUS.UNAUTHORIZED).json({ message: 'You are not logged in' })
+      }
+
+      const MAX_NESTING_LEVEL = 3 // Set the maximum nesting level you want
+
+      const populateContent = async (folder, currentLevel) => {
+         if (currentLevel >= MAX_NESTING_LEVEL) {
+            return folder
+         }
+
+         const firstFiles = await File.find({ user: userId, folderId: folder._id })
+         const firstFolders = await Folder.find({ user: userId, folderId: folder._id })
+
+         // Create a new object with the content attribute
+         const folderWithContent = {
+            ...folder.toObject(),
+            content: firstFolders.concat(firstFiles),
+         }
+
+         const contentPromises = folderWithContent.content.map(async (subFolder) => {
+            return await populateContent(subFolder, currentLevel + 1)
+         })
+
+         folderWithContent.content = await Promise.all(contentPromises)
+
+         return folderWithContent
+      }
+
+      // Find root folders with folderId set to null
+      let rootFolders = await Folder.find({ user: userId, folderId: null }).sort({ createdAt: -1 }).exec()
+
+      // Create a new array with objects containing the content attribute
+      const rootFoldersWithContent = await Promise.all(
+         rootFolders.map(async (rootFolder) => {
+            return await populateContent(rootFolder, 0)
+         })
+      )
+
+      console.log(rootFoldersWithContent, 'root folders with content')
+      return res.status(STATUS.SUCCESS).json({
+         message: 'content found',
+         folders: rootFoldersWithContent,
       })
    } catch (error) {
       return res.status(STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' })
