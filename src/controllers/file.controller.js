@@ -24,6 +24,8 @@ controller.uploadFile = async (req, res) => {
       let result
       if (file.mimetype === 'video/mp4') {
          result = await cloudinary.uploader.upload(file.tempFilePath, { resource_type: 'video' })
+      } else if (file.mimetype === 'application/pdf') {
+         result = await cloudinary.uploader.upload(file.tempFilePath, { resource_type: 'auto' })
       } else {
          result = await cloudinary.uploader.upload(file.tempFilePath)
       }
@@ -31,7 +33,7 @@ controller.uploadFile = async (req, res) => {
       let mask = result.url
       if (!isValidURL(result.url)) mask = process.env.FRONTEND_DOMAIN + `file/${result.url}`
       const qrCode = await qrcode.toDataURL(mask)
-      console.log(qrCode, 'qr code')
+      // console.log(qrCode, 'qr code')
       // await res.contentType('image/png')
       // await res.send(qrCode)
       const newFile = await new File({
